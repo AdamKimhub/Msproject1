@@ -3,8 +3,7 @@ This repository is set up to build a machine learning model similar to CGCNN to 
 
 The model primarily identifies patterns that exist between the type, number, and arrangement of defects in a crystalline 2D material and a material's band gap properties.
 
-## Details of what each file does
-### `combine.py`
+## `combine.py`
 This python file combines the `descriptor.csv` file with the `defects.csv` file while also doing some calculatons to extract vital features of each defective structure. 
 
 Resultant features/atttributes are:
