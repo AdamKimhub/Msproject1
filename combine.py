@@ -42,11 +42,11 @@ def main():
         # hBN,BP,GaSe,InSe have the majority and minority attribues
         if "2" not in i:
             merged_df = merged_df.apply(remove_majmin, axis= 1)
-            merged_df = merged_df.apply(lambda row: normalize(row, structure_df, the_material), axis=1)
+            merged_df = merged_df.apply(lambda row: get_bgv(row, structure_df, the_material), axis=1)
 
         # MoS2 and WSe2 only need to be normalized
         else:
-            merged_df = merged_df.apply(lambda row: normalize(row,structure_df, the_material),axis=1)
+            merged_df = merged_df.apply(lambda row: get_bgv(row,structure_df, the_material),axis=1)
 
         # Replace the specific defect sites with type of defect sites
         merged_df = merged_df.apply(lambda row: get_defect_sites(row), axis=1)
@@ -134,7 +134,7 @@ def get_ef(row, structure_df, elements_df, base):
     
     # Get defect:site pair
     defects_dict = {i:row[i] for i in defects_columns}
-    total_sites = sum(defects_dict.values())
+    #total_sites = sum(defects_dict.values())
 
     # Get list of niui(The number of atoms i * chemical potential of atom i)
     list_niui = []
@@ -168,7 +168,7 @@ def get_ef(row, structure_df, elements_df, base):
     row["formation_energy"] = E_defect - E_pristine - the_sum
 
     # The formation energy per site
-    row["formation_energy_per_site"] = row["formation_energy"]/total_sites
+    #row["formation_energy_per_site"] = row["formation_energy"]/total_sites
 
     return row
 
@@ -188,12 +188,14 @@ def remove_majmin(row):
 
     return row
 
-def normalize(row, structure_df, base):
+def get_bgv(row, structure_df, base):
     E_1_pristine = structure_df.loc[structure_df["base"] == base, "E_1"].iloc[0]
     E_vbm_pristine = structure_df.loc[structure_df["base"] == base, "E_VBM"].iloc[0]
 
-    row["norm_homo"] = row["homo"] - row["E_1"] - (E_vbm_pristine - E_1_pristine)
-    row["norm_lumo"] = row["lumo"] - row["E_1"] - (E_vbm_pristine - E_1_pristine)
+    new_norm_homo = row["homo"] - row["E_1"] - (E_vbm_pristine - E_1_pristine)
+    new_norm_lumo = row["lumo"] - row["E_1"] - (E_vbm_pristine - E_1_pristine)
+
+    row["band_gap_value"] = new_norm_lumo - new_norm_homo
 
     return row
 
