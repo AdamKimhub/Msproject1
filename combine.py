@@ -210,7 +210,10 @@ def get_defect_sites(row):
     row["vacancy_sites"] = sum(vacant_dict.values())
 
     sub_dict = {i:row[i] for i in sub_columns}
-    row["substituiton_sites"] = sum(sub_dict.values())
+    row["substitution_sites"] = sum(sub_dict.values())
+
+    # Get total defect sites
+    row["defect_sites"] = row["vacancy_sites"]+row["substitution_sites"]
 
     return row
 
