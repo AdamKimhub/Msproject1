@@ -4,6 +4,7 @@ from pathlib import Path
 
 def main():
     materials = ["high_BN", "high_P", "high_InSe", "high_GaSe", "high_MoS2", "high_WSe2", "low_MoS2", "low_WSe2"]
+    df_to_merge = []
 
     # Handle non tmdc dataset
     for i in materials :
@@ -69,10 +70,16 @@ def main():
                                         "band_gap", "homo", "lumo", "description", "pbc"], axis=1)
             merged_df["total_mag"] = 0
 
+        df_to_merge.append(merged_df)
+
         # Return the new df as csv
         new_csv_file = Path(f"dataset/combined/{i}.csv")
         merged_df.to_csv(new_csv_file)
-    
+
+    # Merge the new files
+    the_merge = pd.concat(df_to_merge, ignore_index=True)
+    combined_file = Path(f"dataset/combined/combined.csv") 
+    the_merge.to_csv(combined_file)
     
 def string_to_sites(a_column):
     # Remove unwanted chars
