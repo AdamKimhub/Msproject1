@@ -12,9 +12,15 @@ def struct_to_dict(structure):
     structure_dict = {i: j for i, j in zip(list_of_sites, list_of_frac_coords)}
     return structure_dict
 
+def get_index(ref_struct, a_site):
+    for index, site in enumerate(ref_struct.sites):
+        if np.array_equal(site.coords, a_site.coords):
+            return index
+
 
 def get_defects_structure(defective_struct, reference_struct):
     copy_defective_struct = defective_struct.copy()
+    mindnn = MinimumDistanceNN()
     # struct to dict
     defective_dict = struct_to_dict(copy_defective_struct)
     reference_dict = struct_to_dict(reference_struct)
@@ -42,7 +48,8 @@ def get_defects_structure(defective_struct, reference_struct):
                                     "new_an": def_site.specie.Z,
                                     "an_change": def_site.specie.Z - ref_site.specie.Z,
                                     "vacancy_defect": 0.0,
-                                    "substitution_defect": 1.0}
+                                    "substitution_defect": 1.0,
+                                    "bonds_broken": 0.0}
                     defects_properties[def_site] = add_property
 
         if not matching: # Vacancy case
@@ -62,7 +69,8 @@ def get_defects_structure(defective_struct, reference_struct):
                           "new_an": 0,
                           "an_change": 0 - ref_site.specie.Z,
                           "vacancy_defect": 1.0,
-                          "substitution_defect": 0.0}
+                          "substitution_defect": 0.0,
+                          "bonds_broken": mindnn.get_cn(reference_struct, get_index(reference_struct, ref_site))}
             defects_properties[vacant_site] = add_property
 
     # create a defects structure
@@ -81,11 +89,9 @@ def get_nodes_edges(structure):
     sites_list = structure.sites
 
     # The nodes: These are the sites features
-    mdnn = MinimumDistanceNN()
     nodes = []
     for i, site in enumerate(sites_list):
-        the_cn = mdnn.get_cn(structure, i)
-        node_features = [i, the_cn - 1, site.properties["original_an"], site.properties["new_an"],
+        node_features = [i, site.properties["bonds_broken"], site.properties["original_an"], site.properties["new_an"],
                          site.properties["an_change"], site.properties["vacancy_defect"],
                          site.properties["substitution_defect"]]
         # Node features syntax
