@@ -103,13 +103,17 @@ def get_nodes_edges(structure):
     # The edges
     edges = [] # The sites in relation
     edge_features = [] # The distance between each site
-    
+
+    from_l = []
+    to_l = []
     for i, site_i in enumerate(sites_list):
         for j, site_j  in enumerate(sites_list):
             if i != j:
-                edges.append([i,j])
+                from_l.append(i)
+                to_l.append(j)
                 dist = site_i.distance(site_j)
                 edge_features.append([dist])
-
+    edges.append(from_l)
+    edges.append(to_l)
     return nodes, edges, edge_features
 
