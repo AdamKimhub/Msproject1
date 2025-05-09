@@ -26,9 +26,6 @@ After the `descriptor.csv` and the `defects.csv` files are combined, high densit
 
 With this grouping, the low density dataset has a total of 3000 data points while the high density dataset has a total of 11,000 data points.
 
-This means that there is an imabalance in the dataset. 
-
-
 ## Dataset Disclaimer
 The dataset used in this repository is originally from **Pengru Huang**. If you wish to use this dataset, please **cite the original document** that generated it:
 
