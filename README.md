@@ -1,30 +1,27 @@
 # Exploring the Band Gap Property of 2D Crystalline Materials With Point Defects Using a Machine Learning-based Model
 This repository is set up to build a machine learning model similar to CGCNN to predict the band gap values of 2D crystalline materials with point defects(vacancy or substitutional).
 
-The model primarily identifies patterns that exist between the type, number, and arrangement of defects in a crystalline 2D material and a material's band gap properties.
+## The Data
+The materials involved in this dataset are:
+1. Boron nitride ($BN$)
+2. Black phosphorus ($bP$)
+3. Gallium selenide ($GaSe$)
+4. Indium selenide ($InSe$)
+5. Molybdenum disulfide ($MoS_2$)
+6. Tungsten diselenide ($WSe_2$)
 
-## `combine.py`
-This python file combines the `descriptor.csv` file with the `defects.csv` file while also doing some calculatons to extract vital features of each defective structure. 
+These materials may have the vacancy, substitution, or both defect sites at different concentrations. They can have a low concentration of defects (1, 2, or 3 defect sites) or a high concentration of defects(2.5, 5, 7.5, 10, and 12.5% defect sites).
 
-Resultant features/atttributes are:
-1. `_id`: Cif id of a crystalline strcture.
-2. `energy`: Total potential energy of the crystal structure as reported by VASP(given in eV).
-3. `fermi_level`: Fermi level of the crystalline structure given in eV
-4. `total_mag`: Total magnetisation of the crystalline material
-5. `base`: Host material of the crystalline material
-6. `cell`: Supercell size
-7. `vacancy_sites` and `substituiton_sites`: defect type identification
-8. `dataset_material`: Type of dataset material(high density dataset+host material or low density + host material)[Essential for splitting the data]
-9. `formation_energy`: defect formation energy
-10. `formation_energy_per_site`: defect formation energy divided by the number of defect sites
-11. `energy_per_atom`: Total potential of the system divide by the number of atoms(given in eV)
-12. `E_1`: Energy of the first Kohn-sham orbital of the structure with defects
-13. `norm_homo`: Normalized value of highest occcupied molecular orbital
-14. `norm_lumo`: Normalized value of lowest unoccupoed molecular orbital.
+The dataset provided provides a dataset of 5933 defect configurations of lowly concentrated structures of defects in $WSe_2$ and $MoS_2$ materials totaling 11866. This dataset prioritizes the vast possibilities of arrangement of defect sites in a material.
 
-After the `descriptor.csv` and the `defects.csv` files are combined, high density datasets are grouped together and the low density dataset is grouped together.
+For the highly concentrated dataset, all the materials mentioned above have 100 structures with 2.5, 5, 7.5, 10, and 12.5% defect sites. This makes up 500 structures for each of the 6 materials. This dataset prioritizes the concentration of defect sites in a material.
 
-With this grouping, the low density dataset has a total of 3000 data points while the high density dataset has a total of 11,000 data points.
+The model learns to identify how the type of host material, the type of defect present, the concentration of the defects in the material and the arrangement of the said defects in the material affects the bandgp of the material and inturn predict the band gap of a defective material.
+
+## Workflow
+The model is built on all the datasets combined through combine.py in an attempt to make it diverse to work on any host material.
+
+Afterwards, the structures are turned to graphs to build a GNN model as inspired by the Crystal Graph Convolution Neural Network.
 
 ## Dataset Disclaimer
 The dataset used in this repository is originally from **Pengru Huang**. If you wish to use this dataset, please **cite the original document** that generated it:
