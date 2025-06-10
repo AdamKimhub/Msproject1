@@ -5,14 +5,54 @@ import numpy as np
 import pandas as pd
 from pymatgen.core import Structure, PeriodicSite, DummySpecie
 from pymatgen.analysis.local_env import MinimumDistanceNN
+import json
+from mp_api.client import MPRester
+import config
+API_KEY = config.API_KEY
 
 def struct_to_dict(structure):
     rounded_coords = np.round(structure.frac_coords, 3)
     return {tuple(coord): site for coord, site in zip(rounded_coords, structure.sites)}
 
-def fe_site(original, new):
+def get_formation(element, API_KEY):
+    with MPRester(API_KEY) as mpr:
+        results = mpr.materials.summary.search(
+            elements=[element],
+            num_elements=1,
+            fields= ["energy_per_atom"]
+        )
+        forms_list = [result.energy_per_atom for result in results]
+        avg_formation_energy = np.mean(forms_list)
+        
+    return avg_formation_energy
+    
+
+def get_from_json(element, API_KEY):
+    with open("./test.json", "r") as f:
+        try:
+            the_dict = json.load(f)
+            if element in the_dict:
+                to_return = the_dict[element]
+
+            else:
+                to_return = get_formation(element, API_KEY)
+                the_dict[element] = to_return
+                with open("./test.json", "w") as f:
+                    json.dump(the_dict, f)
+
+
+        except:
+            the_dict = {}
+            with open("./test.json", "a") as f:
+                to_return = get_formation(element, API_KEY)
+                the_dict[element] = to_return
+                json.dump(the_dict, f)
+
+        return to_return
+    
+def fe_site_csv(original, new):
     # from elements.csv
-    element_pot = element_pot = {"Mo":-10.9332, "S":-4.127, "W":-13.0106, "Se":-3.489,
+    element_pot = {"Mo":-10.9332, "S":-4.127, "W":-13.0106, "Se":-3.489,
                    "B":-6.704, "N":-8.324, "Ga":-3.03, "In":-2.715,
                    "P":-5.362, "V":-8.992, "O":-4.938, "C":-9.226}
     
@@ -21,6 +61,18 @@ def fe_site(original, new):
 
     else: # For substitution
         fe_defect = (element_pot[original]* -1) + element_pot[new]
+        
+    return fe_defect                                                                                                                                                                                                                        
+
+
+def fe_site(original, new):
+    if new == 0: # For vcancy
+        fe_defect = get_from_json(original, API_KEY) * -1
+
+    else: # For substitution
+        form_original = get_from_json(original, API_KEY)
+        form_new = get_from_json(new, API_KEY)
+        fe_defect = (form_original * -1) + form_new
         
     return fe_defect
 
