@@ -40,7 +40,6 @@ def get_from_json(element, API_KEY):
                 with open("./test.json", "w") as f:
                     json.dump(the_dict, f)
 
-
         except:
             the_dict = {}
             with open("./test.json", "a") as f:
@@ -49,21 +48,6 @@ def get_from_json(element, API_KEY):
                 json.dump(the_dict, f)
 
         return to_return
-    
-def fe_site_csv(original, new):
-    # from elements.csv
-    element_pot = {"Mo":-10.9332, "S":-4.127, "W":-13.0106, "Se":-3.489,
-                   "B":-6.704, "N":-8.324, "Ga":-3.03, "In":-2.715,
-                   "P":-5.362, "V":-8.992, "O":-4.938, "C":-9.226}
-    
-    if new == 0: # For vcancy
-        fe_defect = element_pot[original]* -1
-
-    else: # For substitution
-        fe_defect = (element_pot[original]* -1) + element_pot[new]
-        
-    return fe_defect                                                                                                                                                                                                                        
-
 
 def fe_site(original, new):
     if new == 0: # For vcancy
@@ -187,3 +171,20 @@ def get_nodes_edges(structure):
     edges.append(from_e)
     edges.append(to_e)
     return nodes, edges, edge_features
+
+def get_global(row):
+    # Create one hot encoding for the host material
+    # All host materials
+    host_materials = ["BN", "GaSe", "InSe", "MoS2", "P", "WSe2"]
+    to_encoded = np.zeros(len(host_materials))
+
+    attempt = "MoS2"
+
+    # The resultant array
+    for i, host in enumerate(host_materials):
+        if host == row['base']:
+            to_encoded[i] = 1
+
+    to_encoded.append(row['defect_concentration'])
+
+    return to_encoded
