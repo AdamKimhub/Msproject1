@@ -19,15 +19,17 @@ For the highly concentrated dataset, all the materials mentioned above have 100 
 The model learns to identify how the type of host material, the type of defect present, the concentration of the defects in the material and the arrangement of the said defects in the material affects the bandgp of the material and inturn predict the band gap of a defective material.
 
 ## Workflow
-The model is built on all the datasets combined through combine.py in an attempt to make it diverse to work on any host material.
+You can follow the way I moved from the data to the model through the notebooks while the python scripts hold the final code.
 
-Afterwards, the structures are turned to graphs to build a GNN model as inspired by the Crystal Graph Convolution Neural Network.
+To follow:
+`combine.ipynb(combine.py)` ->`all_refs.ipynb` -> `cif_to_graph.ipynb(to_graph.py)` -> `graph_to_mldata.ipynb` -> `model_build.ipynb(models.py)`
+
 
 ## Dataset Disclaimer
 The dataset used in this repository is originally from **Pengru Huang**. If you wish to use this dataset, please **cite the original document** that generated it:
 
 > Huang, Pengru, et al. "Unveiling the complex structure-property correlation of defects in 2D materials based on high throughput datasets." npj 2D Materials and Applications 7.1 (2023): 6.
 
-I have modified the dataset to suit my needs, so the version provided here is **not identical to the original**.
+I have modified the dataset to suit my needs, so the version used here is **not identical to the original**.
 
-To comply with proper attribution and avoid unintended reproduction of non-original documents, I have **not included the dataset in this repository**. If you need access to the original data, please refer to the original source linked above.
+To comply with proper attribution and avoid unintended reproduction of non-original documents, I have **not included the dataset in this repository**. If you need access to the original data, please refer to [this](2dmd.Airi) website and cite the link above.

@@ -3,7 +3,8 @@ from pathlib import Path
 import ast
 import numpy as np
 import pandas as pd
-from pymatgen.core import Structure, PeriodicSite, DummySpecie
+from pymatgen.core import Structure, PeriodicSite, DummySpecie, Composition
+from pymatgen.core.periodic_table import Element
 from pymatgen.analysis.local_env import MinimumDistanceNN
 import json
 from mp_api.client import MPRester
@@ -130,16 +131,23 @@ def get_defects_structure(defective_struct, reference_struct):
 
     return defects_struct
 
-def get_nodes_edges(structure):
+def get_c_graph(structure):
     sites_list = structure.sites
 
     # The nodes: These are the sites features
     nodes = []
     for i, site in enumerate(sites_list):
-        node_features = [i, site.properties["bonds_broken"], site.properties["original_an"], 
-                         site.properties["new_an"], site.properties["an_change"], 
-                         site.properties["vacancy_defect"], site.properties["substitution_defect"], 
-                         site.properties["site_fe"]]
+        node_features = [
+            i, 
+            site.properties["bonds_broken"], 
+            site.properties["original_an"], 
+            site.properties["new_an"], 
+            site.properties["an_change"], 
+            site.properties["vacancy_defect"], 
+            site.properties["substitution_defect"], 
+            site.properties["site_fe"]
+        ]
+
         # Node features syntax
         nodes.append(node_features)
          
@@ -153,38 +161,40 @@ def get_nodes_edges(structure):
     
     for i, site_i in enumerate(sites_list):
         for j, site_j  in enumerate(sites_list):
+            # Edges 
             from_e.append(i)
             to_e.append(j)
+
             # Get distance between sites
             dist = site_i.distance(site_j)
 
             # Are the defects the same or different
-            if site_i.properties["an_change"] == site_j.properties["an_change"]:
-                same_diff = 1
-            else:
-                same_diff = 0
+            same_diff = int(site_i.properties["an_change"] == site_j.properties["an_change"])
 
             # What is the site_fe difference
             site_fe_diff = np.abs(site_i.properties["site_fe"] - site_j.properties["site_fe"])
 
             edge_features.append([dist,same_diff,site_fe_diff])
+            
     edges.append(from_e)
     edges.append(to_e)
-    return nodes, edges, edge_features
 
-def get_global(row):
-    # Create one hot encoding for the host material
-    # All host materials
-    host_materials = ["BN", "GaSe", "InSe", "MoS2", "P", "WSe2"]
-    to_encoded = np.zeros(len(host_materials))
+    # The global features
+    the_ids = []
+    the_ratios = []
+    total_sites = len(sites_list)
 
-    attempt = "MoS2"
+    the_formula = structure.formula
+    composition = Composition(the_formula)
+    element_dict = composition.get_el_amt_dict()
 
-    # The resultant array
-    for i, host in enumerate(host_materials):
-        if host == row['base']:
-            to_encoded[i] = 1
+    for symb, numb in element_dict.items():
+        try:
+            ids = Element(symb).Z - 1
+        except ValueError:
+            ids = 0
+        the_ids.append(ids)
+        ration = numb/total_sites
+        the_ratios.append(ration)
 
-    to_encoded.append(row['defect_concentration'])
-
-    return to_encoded
+    return nodes, edges, edge_features, the_ids, the_ratios
