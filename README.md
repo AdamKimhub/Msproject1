@@ -19,11 +19,22 @@ For the highly concentrated dataset, all the materials mentioned above have 100 
 The model learns to identify how the type of host material, the type of defect present, the concentration of the defects in the material and the arrangement of the said defects in the material affects the bandgp of the material and inturn predict the band gap of the defective material.
 
 ## Workflow
-You can follow the way I moved from the data to the model through the notebooks while the python scripts hold the final code for future importing.
+You can follow the way I moved from the original data (`original_dataset`)to the training of the model in the following way:
 
-To follow:
-`combine.ipynb(combine.py)` ->`all_refs.ipynb` -> `cif_to_graph.ipynb(to_graph.py)` -> `graph_to_mldata.ipynb` -> `model_build.ipynb(models.py)` -> `demonstration.ipynb`
+1. Run all cells in `all_refs.ipynb` to get the pristine form of all the defective materials in the dataset.
+2. Run `combine.py` to clean the data and exctract the required features for this project. (You will need to have a materials project API key to run a pasrt of this code)
+3. Confirm if `to graph.py` is correct by executing the cells in `cif_to_graph.ipynb`. This will be used to convert the crystal structures into graphs.
+4. Execute all cells in `graph_to_mldata.ipynb` to convert all the structures into graphs and create train, validation, and test sets.
+5. Execute all cells in `model_build.ipynb` to train and test the model. The model architecture is saved in `models.py`
+6. Use `Demonstration.ipynb` to illustrate the model in action.
 
+You can also jump straight to predicting the band gap with the model using `Demonstration.ipynb`. The model will be able to make accurate predictions of the band gap as long as:
+
+1. The defects present in the material are either vacancies or substitutionals.
+2. The material is a 2D crystalline material*
+3. You have both the pristine and defective structure so as to be able to map out where the defects are located.
+
+* _The model will make accurate predictions if tested on materials that it was trained on. The model might fail to make accurate predictions for a different material(from the ones used to train it)_
 
 ## Dataset Disclaimer
 The dataset used in this repository is originally from **Pengru Huang**. If you wish to use this dataset, please **cite the original document** that generated it:

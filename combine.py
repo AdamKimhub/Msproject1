@@ -2,23 +2,25 @@ import pandas as pd
 from pymatgen.core import Structure
 
 def main():
+    original_data = "orignal_dataset"
+    final_data = "final_dataset"
+    
     materials = ["high_BN", "high_P", "high_InSe", "high_GaSe", "high_MoS2", "high_WSe2", "low_MoS2", "low_WSe2"]
     df_to_merge = []
     ref_sites_dict = {}
 
-    # Handle non tmdc dataset
     for i in materials :
         # Get reference structure
-        reference_structure = Structure.from_file(f"dataset/ref_cifs/{i}.cif")
+        reference_structure = Structure.from_file(f"{final_data}/ref_cifs/{i}.cif")
         ref_sites_dict[i] = reference_structure.num_sites
 
         parts = i.split("_")
         the_material = parts[1]
 
         # Load the data to df
-        defects_df = pd.read_csv(f"dataset/{i}/defects.csv")
-        description_df = pd.read_csv(f"dataset/{i}/descriptors.csv")
-        structure_df = pd.read_csv(f"dataset/initial_structures.csv")
+        defects_df = pd.read_csv(f"{original_data}/{i}/defects.csv")
+        description_df = pd.read_csv(f"{original_data}/{i}/descriptors.csv")
+        structure_df = pd.read_csv(f"{original_data}/initial_structures.csv")
         
         # Prepare the descriptor df
         # Change the column name of the descriptor id column
@@ -70,7 +72,7 @@ def main():
         df_to_merge.append(merged_df)
 
         # Return the new df as csv
-        new_csv_file = f"dataset/combined/{i}.csv"
+        new_csv_file = f"{final_data}/combined/{i}.csv"
         merged_df.to_csv(new_csv_file)
 
     # Merge the new files
@@ -83,7 +85,7 @@ def main():
     the_merge["strata"] = the_merge["to_strata"].map(mapping)
     the_merge = the_merge.drop(columns=["to_strata"])
     
-    combined_file = f"dataset/combined/combined.csv" 
+    combined_file = f"{final_data}/combined/combined.csv" 
     the_merge.to_csv(combined_file)
     
 def string_to_sites(a_column):
