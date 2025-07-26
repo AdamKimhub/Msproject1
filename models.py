@@ -42,7 +42,14 @@ class GNNModel(nn.Module):
         x = self.fc2(x)
         return x
 
+class LogCoshLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
 
+    def forward(self, input, target):
+        ey_t = input-target
+        return torch.mean(torch.log(torch.cosh(ey_t + 1e-12)))
+    
 # Instantiate model, optimizer, loss
 # run the model in the gpu if the device has one
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -54,7 +61,8 @@ GNN_model = GNNModel().to(device)
 optimizer = torch.optim.Adam(GNN_model.parameters(), lr=0.001)
 
 # Loss function
-loss_fn = nn.MSELoss()
+# loss_fn = nn.MSELoss()
+loss_fn = LogCoshLoss()
 
 def train(model, train_loader):
     model.train()
