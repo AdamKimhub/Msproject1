@@ -6,7 +6,6 @@ def main():
     final_data = "final_dataset"
     
     materials = ["high_BN", "high_P", "high_InSe", "high_GaSe", "high_MoS2", "high_WSe2", "low_MoS2", "low_WSe2"]
-    df_to_merge = []
     ref_sites_dict = {}
 
     for i in materials :
@@ -69,24 +68,10 @@ def main():
                                         "base", "energy_per_atom"], axis=1)
 
 
-        df_to_merge.append(merged_df)
-
         # Return the new df as csv
         new_csv_file = f"{final_data}/combined/{i}.csv"
         merged_df.to_csv(new_csv_file)
 
-    # Merge the new files
-    the_merge = pd.concat(df_to_merge, ignore_index=True)
-
-    # Convert the values in the strata to integers to split effectively
-    unique_values = pd.unique(the_merge["to_strata"])
-    mapping = {value: i for i, value in enumerate(unique_values)}
-
-    the_merge["strata"] = the_merge["to_strata"].map(mapping)
-    the_merge = the_merge.drop(columns=["to_strata"])
-    
-    combined_file = f"{final_data}/combined/combined.csv" 
-    the_merge.to_csv(combined_file)
     
 def string_to_sites(a_column):
     # Remove unwanted chars
@@ -178,6 +163,14 @@ def get_strata(row, ref_sites_dict):
     # The strata column will be in the form of material type_defect concentration
     row["to_strata"] = f"{row['base']}_{defect_conc}"
     return row
+
+def get_strata(merged_df):
+    unique_values = pd.unique(merged_df["to_strata"])
+    mapping = {value: i for i, value in enumerate(unique_values)}
+
+    merged_df["strata"] = merged_df["to_strata"].map(mapping)
+    merged_df = merged_df.drop(columns=["to_strata"])
+    return merged_df
 
 if __name__ == "__main__":
     main()
