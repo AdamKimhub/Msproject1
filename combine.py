@@ -45,7 +45,7 @@ def main():
             merged_df = merged_df.apply(lambda row: get_bgv(row,structure_df, the_material),axis=1)
 
         # Replace the specific defect sites with type of defect sites
-        merged_df = merged_df.apply(lambda row: get_strata(row, ref_sites_dict), axis=1)
+        merged_df = merged_df.apply(lambda row: get_to_strata(row, ref_sites_dict), axis=1)
         merged_df = merged_df.drop(columns=[col for col in merged_df.columns if "vacant_" in col or "sub_" in col])
 
         # Remove the unrequired columns and add total mag where necessary
@@ -139,7 +139,7 @@ def get_bgv(row, structure_df, base):
 
     return row
 
-def get_strata(row, ref_sites_dict):
+def get_to_strata(row, ref_sites_dict):
     # Get the defects in the df
     all_columns = list(row.index)  
     vacant_columns = [col for col in all_columns if "vacant" in col]
