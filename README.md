@@ -21,9 +21,8 @@ The model learns to identify how the type of host material, the type of defect p
 ## Workflow
 You can follow the way I moved from the original data (`original_dataset`)to the training of the model in the following way:
 
-1. Run all cells in `all_refs.ipynb` to get the pristine form of all the defective materials in the dataset.
-2. Run `combine.py` to clean the data and exctract the required features for this project. (You will need to have a materials project API key to run a pasrt of this code)
-3. Confirm if `to graph.py` is correct by executing the cells in `cif_to_graph.ipynb`. This will be used to convert the crystal structures into graphs.
+1. Run all cells in `01-original_to_clean.ipynb` to clean the original data and exctract the required features for this project. 
+2. Run all cells in `cif_to_graph.ipynb`. This will be used to convert the crystal structures into graphs.(You will need to have a materials project API key to run a part of this code)
 4. Execute all cells in `graph_to_mldata.ipynb` to convert all the structures into graphs and create train, validation, and test sets.
 5. Execute all cells in `model_build.ipynb` to train and test the model. The model architecture is saved in `models.py`
 6. Use `Demonstration.ipynb` to illustrate the model in action.
