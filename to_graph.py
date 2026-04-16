@@ -197,4 +197,11 @@ def get_c_graph(structure):
         ration = numb/total_sites
         the_ratios.append(ration)
 
-    return nodes, edges, edge_features, the_ids, the_ratios
+    global_attr = np.zeros(119) # 118 elements + 1 for vacancy
+    for indx, ratio in zip(the_ids, the_ratios):
+        global_attr[indx] = ratio
+
+    
+
+    # return nodes, edges, edge_features, the_ids, the_ratios
+    return nodes, edges, edge_features, global_attr
