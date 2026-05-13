@@ -131,26 +131,12 @@ def get_defects_structure(defective_struct, reference_struct):
 
     return defects_struct
 
+# Turn the defects structure into crystal graph
 def get_c_graph(structure):
     sites_list = structure.sites
 
     # The nodes: These are the sites features
     nodes = []
-    for i, site in enumerate(sites_list):
-        node_features = [
-            i, 
-            site.properties["bonds_broken"], 
-            site.properties["original_an"], 
-            site.properties["new_an"], 
-            site.properties["an_change"], 
-            site.properties["vacancy_defect"], 
-            site.properties["substitution_defect"], 
-            site.properties["site_fe"]
-        ]
-
-        # Node features syntax
-        nodes.append(node_features)
-         
 
     # The edges
     edges = [] # The sites in relation
@@ -158,50 +144,56 @@ def get_c_graph(structure):
 
     from_e = []
     to_e = []
-    
-    for i, site_i in enumerate(sites_list):
+
+    # The global features
+    tots = len(sites_list)
+
+    vacants, subs, an_changes, formation_energy = 0,0,0,0
+
+
+    for i, site in enumerate(sites_list):
+        node_features = [
+            i,
+            site.properties["bonds_broken"],
+            site.properties["original_an"],
+            site.properties["new_an"],
+            site.properties["an_change"],
+            site.properties["vacancy_defect"],
+            site.properties["substitution_defect"],
+            site.properties["site_fe"]
+        ]
+
+        # Node features syntax
+        nodes.append(node_features)
+
         for j, site_j  in enumerate(sites_list):
-            # Edges 
+            # Edges
             from_e.append(i)
             to_e.append(j)
 
             # Get distance between sites
-            dist = site_i.distance(site_j)
+            dist = site.distance(site_j)
 
             # Are the defects the same or different
-            same_diff = int(site_i.properties["an_change"] == site_j.properties["an_change"])
+            same_diff = int(site.properties["an_change"] == site_j.properties["an_change"])
 
             # What is the site_fe difference
-            site_fe_diff = np.abs(site_i.properties["site_fe"] - site_j.properties["site_fe"])
+            site_fe_diff = np.abs(site.properties["site_fe"] - site_j.properties["site_fe"])
 
             edge_features.append([dist,same_diff,site_fe_diff])
-            
+
+        vacants += site.properties["vacancy_defect"]
+        subs += site.properties["substitution_defect"]
+        an_changes += site.properties["an_change"]
+        formation_energy += site.properties["site_fe"]
+
     edges.append(from_e)
     edges.append(to_e)
 
-    # The global features
-    the_ids = []
-    the_ratios = []
-    total_sites = len(sites_list)
+    vacants_rtn = vacants/tots
+    substitutions_rtn = subs/tots
+    avg_formation_energy = formation_energy/tots
 
-    the_formula = structure.formula
-    composition = Composition(the_formula)
-    element_dict = composition.get_el_amt_dict()
-
-    for symb, numb in element_dict.items():
-        try:
-            ids = Element(symb).Z - 1
-        except ValueError:
-            ids = 0
-        the_ids.append(ids)
-        ration = numb/total_sites
-        the_ratios.append(ration)
-
-    global_attr = np.zeros(119) # 118 elements + 1 for vacancy
-    for indx, ratio in zip(the_ids, the_ratios):
-        global_attr[indx] = ratio
-
+    global_features = [vacants, vacants_rtn, subs, substitutions_rtn, an_changes, avg_formation_energy]
     
-
-    # return nodes, edges, edge_features, the_ids, the_ratios
-    return nodes, edges, edge_features, global_attr
+    return nodes, edges, edge_features, global_features 
