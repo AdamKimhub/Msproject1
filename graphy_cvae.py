@@ -1,6 +1,8 @@
 # import pandas as pd
 import numpy as np
-from pymatgen.core import Structure, PeriodicSite, DummySpecie 
+from pymatgen.core import Structure, PeriodicSite, DummySpecie
+import torch 
+
 
 def struct_to_dict(structure):
     rounded_coords = np.round(structure.frac_coords, 3)
@@ -84,3 +86,89 @@ def get_defects_structure(defective_struct, reference_struct):
             pass
 
     return defects_struct
+
+
+# Defects cloud to padded tensor
+def cloud_to_tensor(defect_cloud, max_points):
+    rows = []
+    for a_site in defect_cloud:
+        fc = a_site.frac_coords.tolist()
+
+        required = [
+            a_site.properties["original_Z"]/94,
+            a_site.properties["new_Z"]/94,
+            a_site.properties["substitution_defect"],
+            a_site.properties["vacancy_defect"]
+        ]
+
+        combined = fc + required
+
+        rows.append(combined)
+
+    while len(rows) < max_points:
+        rows.append([0.0]*7)
+
+    return torch.tensor(rows, dtype=torch.float32)
+
+
+def tensor_to_cloud(tensor_cloud, threshold):
+    points = []
+    for row in tensor_cloud:
+        row = row.detach().cpu()
+        if row.norm() < threshold:
+            continue  # padding row
+        frac_coords = row[:3].clamp(0.0, 1.0).numpy()
+
+        Zp = int((row[3] * 94).round().clamp(0, 94).item())
+        Zd = int((row[4] * 94).round().clamp(0, 94).item())
+
+        sub_defect = row[5].item()
+        vac_defect = row[6].item()
+
+        if sub_defect:
+            defect_type = "substitution"
+        else:
+            defect_type = "vacancy"
+
+        points.append({
+            "fractional_coords": frac_coords,
+            "Z_pristine":  Zp,
+            "Z_defective": Zd,
+            "defect_type":  defect_type,
+        })
+    return points
+
+
+def func_1(reference_structure):
+    # Node features for each atom in pristine structure
+    node_feats = []
+    for site in reference_structure.sites:
+        el = site.specie
+        node_feats.append([
+            el.Z / 94.0,
+            el.X / 4.0 if el.X else 0.0,
+            el.atomic_radius if el.atomic_radius else 0.0,
+            el.row / 9.0,
+            el.group / 18.0,
+        ])
+    node_features = torch.tensor(node_feats, dtype=torch.float32)
+
+
+    # Build edge index from radius graph with cutoff of 5 Å
+    src, dst = [], []
+    coords = np.array([s.coords for s in reference_structure.sites])
+    for i in range(len(reference_structure.sites)):
+        for j in range(len(reference_structure.sites)):
+            if i == j:
+                continue
+            dist = np.linalg.norm(coords[i] - coords[j])
+            if dist < 5.0:
+                src.append(i)
+                dst.append(j)
+    edge_index = torch.tensor([src, dst], dtype=torch.long)
+
+    return{
+        "node_features": node_features,
+        "edge_index":    edge_index
+    }
+

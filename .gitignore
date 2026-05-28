@@ -1,6 +1,6 @@
 __pycache__
 config.py
-store_final_dataset
+.ipynb_checkpoints
 .vscode
 some_notes.md
 venv

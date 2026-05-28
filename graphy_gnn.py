@@ -1,79 +1,49 @@
-# import pandas as pd
 import numpy as np
-# import matplotlib.pyplot as plt
-# import torch
-# from torch_geometric.data import Data
-# from torch_geometric.loader import DataLoader
-
-
-from pymatgen.core import Structure, PeriodicSite, DummySpecie # , Composition, Element
-# from pymatgen.core.periodic_table import Element as PMGElement
+from pymatgen.core import Structure, PeriodicSite, DummySpecie
 from pymatgen.analysis.local_env import MinimumDistanceNN, CrystalNN, VoronoiNN
-# from mp_api.client import MPRester
-# from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-
-import json
-import config
-
-API_KEY = config.API_KEY
 
 
 vnn = VoronoiNN(allow_pathological=True)
+
 
 def struct_to_dict(structure):
     rounded_coords = np.round(structure.frac_coords, 3)
     return {tuple(coord): site for coord, site in zip(rounded_coords, structure.sites)}
 
-# Functions to get formation energy from Materials Project
-def get_formation(element, API_KEY):
-    with MPRester(API_KEY) as mpr:
-        results = mpr.materials.summary.search(
-            elements=[element],
-            num_elements=1,
-            fields= ["energy_per_atom"]
-        )
-        forms_list = [result.energy_per_atom for result in results]
-        avg_formation_energy = np.mean(forms_list)
-
-    return avg_formation_energy
-
-
-"""def get_from_json(element, API_KEY):
-    try:
-        with open("./test.json", "r") as f:
-            the_dict = json.load(f)
-            to_return = the_dict[element]
-
-    except:
-        the_dict = {}
-        with open("./test.json", "a") as f:
-            to_return = get_formation(element, API_KEY)
-            the_dict[element] = to_return
-
-    return to_return"""
-
-def get_from_json(element, API_KEY):
-    the_dict = {
-            "Mo":-10.9332, "S":-4.127, "W":-13.0106, "Se":-3.489,
-            "B":-6.704, "N":-8.324, "Ga":-3.03, "In":-2.715,
-            "P":-5.362, "V":-8.992, "O":-4.938, "C":-9.226
-        }
-    if element in the_dict:
-        to_return = the_dict[element]
-    else:
-        to_return = get_formation(element, API_KEY)
-
-    return to_return
-
-
-
 def fe_site(original, new):
+    formation_energies = {
+        "H":-2.835951846430921, "He":-0.31196323625, "Li":-2.3461654534259258, "Be":-3.6906741816666666,
+        "B":-7.002827127491851, "C":-9.316731934117035, "N":-7.233842272742187, "O":-4.676438329750001,
+        "F":-2.9296551798214288, "Ne":-1.91282416, "Na":-3.4536177056717374, "Mg":-4.09163935124074,
+        "Al":-6.63584847076, "Si":-8.426176753356291, "P":-8.31567715169643, "S":-7.827358545769599,
+        "Cl":-6.128105756041667, "Ar":-4.856792372499999, "K":-5.951273052253347, "Ca":-6.8788465471875,
+        "Sc":-11.237957669242425, "Ti":-12.802568009213335, "V":-13.922600690000001, "Cr":-14.77669376875,
+        "Mn":-14.348056304012763, "Fe":-8.25899893927, "Co":-13.16277911966809, "Ni":-11.659201161666667,
+        "Cu":-10.54583238875, "Zn":-8.8732424244375, "Ga":-11.365511257524622, "Ge":-13.659562455970299,
+        "As":-14.343474869861112, "Se":-14.136485254729166, "Br":-2.802858366809896, "Kr":-12.577137455166667,
+        "Rb":-3.522684412102679, "Sr":-14.872080059242423, "Y":-20.267552732083335, "Zr":-22.357979443055555,
+        "Nb":-24.592838769404764, "Mo":-25.65156121359375, "Tc":-25.938798287500003, "Ru":-25.359055447499998,
+        "Rh":-23.891668894, "Pd":-22.939867830625, "Ag":-21.344974299333337, "Cd":-20.075181660000002,
+        "In":-22.569768360619864, "Sn":-24.623966149094205, "Sb":-25.500892143392857, "Te":-25.35888922212963,
+        "I":-5.240995872916667, "Xe":-2.681022067222222, "Cs":-25.08106868751572, "Ba":-1.714427234090909,
+        "La":-29.703585855, "Ce":-30.765536582916667, "Pr":-29.360978606000003, "Nd":-29.38402319895833,
+        "Pm":-29.532344363055557, "Sm":-29.722466492916666, "Eu":-38.489393041388894, "Gd":-43.33816982966667,
+        "Tb":-31.19427302633333, "Dy":-31.949257627833333, "Ho":-32.837879401, "Er":-33.877142851833334,
+        "Tm":-35.078865518166666, "Yb":-36.496195276250006, "Lu":-38.04532439777778, "Hf":-45.06808062583333,
+        "Ta":-47.144759839058324, "W":-50.771654835674994, "Re":-52.330339372333334, "Os":-51.948078458750004,
+        "Ir":-51.251150415, "Pt":-51.429006055, "Au":-50.54936647375, "Hg":-49.346659606686515, "Tl":-53.16799786356322, 
+        "Pb":-56.20973389190476, "Bi":-58.259812768529414, "Ac":-68.625217766875, "Th":-73.399498815, 
+        "Pa":-76.84324669166666,    "U":-79.60085220729613, "Np":-82.84298793625, "Pu":-86.04870866293301, 
+        "Am":0, "Cm":0, "Bk":0, "Cf":0,"Es":0, "Fm":0, "Md":0, "No":0, "Lr":0, "Rf":0, 
+        "Db":0, "Sg":0, "Bh":0, "Hs":0, "Mt":0, "Ds":0, "Rg":0, "Cn":0, "Nh":0, "Fl":0,
+        "Mc":0, "Lv":0, "Ts":0, "Og":0, "Po": 0, "At":0, "Rn":0, "Fr":0, "Ra":0
+    }
     if new == 0: # For vcancy
-        fe_defect = get_from_json(original, API_KEY) * -1
+        fe_defect = formation_energies[original] * -1
 
     else: # For substitution
-        form_original = get_from_json(original, API_KEY)
-        form_new = get_from_json(new, API_KEY)
+        form_original = formation_energies[original]
+        form_new = formation_energies[new]
         fe_defect = (form_original * -1) + form_new
 
     return fe_defect
@@ -145,7 +115,7 @@ def get_defects_structure(defective_struct, reference_struct):
                     "group_change": def_specie.group - ref_specie.group,
 
                     "original_max_os": max(ref_specie.common_oxidation_states),
-                    "new_max_os": max(def_specie.common_oxidation_states),
+                    "new_max_os": max(def_specie.common_oxidation_states) if def_specie.common_oxidation_states else 0,
 
                     "original_ef": ref_specie.electron_affinity,
                     "new_ef": def_specie.electron_affinity,
@@ -348,20 +318,24 @@ def get_edges_and_features(reference_structure, defects_structure):
                     vac_vac = 0
                     sub_sub = 0
 
-                if site_i.properties["substitution_defect"] == 1 and site_j.properties["vacancy_defect"] == 1:
+                elif site_i.properties["substitution_defect"] == 1 and site_j.properties["vacancy_defect"] == 1:
                     vac_sub = 1
                     vac_vac = 0
                     sub_sub = 0
 
-
-                if site_i.properties["substitution_defect"] == 1 and site_j.properties["substitution_defect"] == 1:
+                elif site_i.properties["substitution_defect"] == 1 and site_j.properties["substitution_defect"] == 1:
                     vac_sub = 0
                     vac_vac = 0
                     sub_sub = 1
 
-                if site_i.properties["vacancy_defect"] == 1 and site_j.properties["vacancy_defect"] == 1:
+                elif site_i.properties["vacancy_defect"] == 1 and site_j.properties["vacancy_defect"] == 1:
                     vac_sub = 0
                     vac_vac = 1
+                    sub_sub = 0
+
+                else:
+                    vac_sub = 0
+                    vac_vac = 0
                     sub_sub = 0
 
                 edge_features.append(
