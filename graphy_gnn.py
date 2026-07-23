@@ -1,6 +1,10 @@
 import numpy as np
+import torch 
+from torch_geometric.data import Data
+from torch_geometric.loader import DataLoader
 from pymatgen.core import Structure, PeriodicSite, DummySpecie
 from pymatgen.analysis.local_env import MinimumDistanceNN, CrystalNN, VoronoiNN
+
 
 
 vnn = VoronoiNN(allow_pathological=True)
@@ -11,6 +15,30 @@ def struct_to_dict(structure):
     return {tuple(coord): site for coord, site in zip(rounded_coords, structure.sites)}
 
 def fe_site(original, new):
+    """
+    # Get formation energy of all elements in the periodiic table
+    from mp_api.client import MPRester
+    from pymatgen.core.periodic_table import Element
+
+    all_elements = [str(el) for el in Element]
+
+    API_KEY = ""
+
+    def get_formation(element, API_KEY):
+        with MPRester(API_KEY) as mpr:
+            results = mpr.materials.summary.search(
+                elements=[element],
+                num_elements=1,
+                fields= ["energy_per_atom"]
+            )
+            forms_list = [result.energy_per_atom for result in results]
+            avg_formation_energy = np.mean(forms_list)
+
+        return avg_formation_energy
+
+    formation_energies = {element: get_formation(element, API_KEY) for element in all_elements}
+    print(formation_energies)
+    """
     formation_energies = {
         "H":-2.835951846430921, "He":-0.31196323625, "Li":-2.3461654534259258, "Be":-3.6906741816666666,
         "B":-7.002827127491851, "C":-9.316731934117035, "N":-7.233842272742187, "O":-4.676438329750001,
@@ -399,3 +427,51 @@ def get_globals(pristine, defective_structure, defects_structure):
     ]
 
     return global_list
+
+# Create graph representation of the structures
+def graphy(row, reference_structure):
+    material = row["dataset_material"]
+    id = row["_id"]
+    defective_structure = Structure.from_file(f"original_dataset/{material}/cifs/{id}.cif")
+
+    defects_structure = get_defects_structure(defective_structure, reference_structure)
+
+    nodes = get_nodes(defects_structure)
+    edges, edge_features = get_edges_and_features(reference_structure, defects_structure)
+    global_features = get_globals(reference_structure, defective_structure, defects_structure)
+
+    target = row["band_gap_value"]
+
+    the_data = Data(
+        x=torch.tensor(nodes, dtype=torch.float),
+        edge_index=torch.tensor(edges, dtype=torch.long),
+        edge_attr=torch.tensor(edge_features, dtype=torch.float),
+        u=torch.tensor(global_features, dtype=torch.float).unsqueeze(0),
+        y=torch.tensor(target, dtype=torch.float).unsqueeze(0)
+    )
+    return the_data
+
+def fast_grapy(dataset):
+    graph_list = []
+    unique_dataset_materials = dataset["dataset_material"].unique()
+
+    all_mat = len(unique_dataset_materials)
+
+    for i in unique_dataset_materials:
+        subset = dataset[dataset["dataset_material"] == i].reset_index(drop=True)
+        all_rows = len(subset)
+
+        pristine_structure = Structure.from_file(f"Final_Dataset/ref_cifs/{i}.cif")
+        
+        # Go through every row in the subset
+        for index, row in subset.iterrows():
+            data = graphy(row, pristine_structure)
+
+            # Track progress
+            if index % 10 == 0:  # Print progress every 10 rows
+                print(f"material {i} ({index+1}/{all_rows}) - {((index+1)/all_rows)*100:.2f}% complete")
+            
+            # Put all graphs together in a list
+            graph_list.append(data)
+            
+    return graph_list
