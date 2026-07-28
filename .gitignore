@@ -1,6 +1,5 @@
 __pycache__
-config.py
 .ipynb_checkpoints
 .vscode
-some_notes.md
-venv
+Final_Dataset/cvae graphs
+Final_Dataset/gnn graphs
