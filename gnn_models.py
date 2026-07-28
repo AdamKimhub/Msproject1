@@ -138,6 +138,7 @@ class SMAPELoss(nn.Module):
 class RelativeWeightedLoss(nn.Module):
     def __init__(self, delta=0.1, lambda_rel=0.3, eps=1e-2, alpha=1.5):
         super().__init__()
+
         self.delta = delta
         self.lambda_rel = lambda_rel  # weight of relative term
         self.eps = eps                # prevents div-by-zero for ~0 targets

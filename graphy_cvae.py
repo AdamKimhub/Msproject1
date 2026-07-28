@@ -435,6 +435,41 @@ def get_num_defects(the_material):
     the_ds = random.choice(poss_ds)
     return the_ds
 
+# =======================
+# CVAE TARGET
+# =======================
+
+def get_target_tensor(full_defective_structure):
+    
+    orig_z, new_z = [],[]
+
+    for site in full_defective_structure.sites:
+        z_org = site.properties["original_Z"]
+        z_new = site.properties["new_Z"]
+        
+        orig_z.append(z_org)
+        new_z.append(z_new)
+
+    # Sites
+    site_targets = [0 if oz == nz else 1 for oz, nz in zip(orig_z, new_z)]
+    site_targets = np.array(site_targets).T
+
+    # s_mask = site_targets.unsqueeze(-1).to(device=start_x.device)
+    
+    # Species
+    species_targets = []
+    
+    for z in new_z:
+        one_hot = [1 if i == z else 0 for i in range(119)]
+        species_targets.append(one_hot)
+
+    species_targets = np.array(species_targets)
+    
+    # Concatenate along axis 1
+    # result = np.concatenate([site_targets, species_targets], axis=1)
+    result = np.hstack((site_targets[:, np.newaxis], species_targets))
+    return result
+
 # =========================
 # COMBINE TO GET GRAPHS
 # =========================
@@ -469,13 +504,15 @@ def get_graphs(material_dataset):
             the_edges     = get_edges(full_defective_structure)
             the_features  = get_features(the_edges, full_defective_structure)
             the_condition = get_globals(the_material, bgv)
+            the_target    = get_target_tensor(full_defective_structure)
             
             data = Data(
                 x          =torch.tensor(the_nodes, dtype=torch.float),
                 edge_index =torch.tensor(the_edges, dtype=torch.long),
                 edge_attr  =torch.tensor(the_features, dtype=torch.float),
                 u          =torch.tensor(the_condition, dtype=torch.float).unsqueeze(0), 
-                mask       =torch.tensor(the_mask, dtype=torch.bool)
+                mask       =torch.tensor(the_mask, dtype=torch.bool),
+                y          =torch.tensor(the_target, dtype=torch.float)
                 )
         
             data_list.append(data)

@@ -27,6 +27,7 @@ def main():
 
         # Replace the specific defect sites with type of defect sites
         merged_df = merged_df.apply(lambda row: get_to_strata(row, ref_num_sites), axis=1)
+        merged_df = merged_df.apply(lambda row: get_formation_energy(row, merged_df), axis=1)
         merged_df = merged_df.drop(columns=[col for col in merged_df.columns if "vacant_" in col or "sub_" in col])
 
         # Get band gap and clean data 
@@ -212,6 +213,59 @@ def get_strata(merged_df):
     merged_df["strata"] = merged_df["to_strata"].map(mapping)
     merged_df = merged_df.drop(columns=["to_strata"])
     return merged_df
+
+# ================================
+# FORMATION ENERGY OF STRUCTURE
+# ================================
+def get_formation_energy(row, df):
+    focus_columns = df.columns
+
+    # Get Ed
+    Ed = row["energy"]
+
+    pristine_material = row["dataset_material"].split("_")[1]
+    E_pristine = init_structure_df.loc[init_structure_df["base"] == pristine_material, 'energy'].item()
+
+    all_ni_mui = []
+
+    for column in focus_columns:
+        if "sub_" in column:
+            # The electronic potential
+            splits = column.split("_")
+            from_e = splits[1]
+            to_e = splits[2]
+
+            mu_fe = elements_df.loc[elements_df["element"] == from_e, "chemical_potential"].item()
+            mu_te = elements_df.loc[elements_df["element"] == to_e, "chemical_potential"].item()
+
+            ni_mui = mu_fe - mu_te
+
+            # Get the number of sites
+            num_sites = row[column]
+
+            # Combine them
+            all_ni_mui.append(num_sites * ni_mui)
+
+
+        elif "vacant_" in column:
+            # The electronic potential
+            splits = column.split("_")
+            from_e = splits[1]
+
+            mu_fe = elements_df.loc[elements_df["element"] == from_e, "chemical_potential"].item()
+
+            ni_mui = mu_fe
+
+            num_sites = row[column]
+            all_ni_mui.append(ni_mui * num_sites)
+
+        else:
+            pass
+
+
+    E_f = Ed - E_pristine - sum(all_ni_mui)
+    row["Formation_Energy"] = E_f
+    return row
 
 if __name__ == "__main__":
     main()

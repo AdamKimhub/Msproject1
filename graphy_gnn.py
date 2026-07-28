@@ -441,13 +441,15 @@ def graphy(row, reference_structure):
     global_features = get_globals(reference_structure, defective_structure, defects_structure)
 
     target = row["band_gap_value"]
+    form_energy = row["Formation_Energy"]
 
     the_data = Data(
         x=torch.tensor(nodes, dtype=torch.float),
         edge_index=torch.tensor(edges, dtype=torch.long),
         edge_attr=torch.tensor(edge_features, dtype=torch.float),
         u=torch.tensor(global_features, dtype=torch.float).unsqueeze(0),
-        y=torch.tensor(target, dtype=torch.float).unsqueeze(0)
+        y=torch.tensor(target, dtype=torch.float).unsqueeze(0), 
+        fe =torch.tensor(form_energy, dtype=torch.float).unsqueeze(0)
     )
     return the_data
 
