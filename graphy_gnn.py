@@ -2,6 +2,7 @@ import numpy as np
 import torch 
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
+from pymatgen.core.periodic_table import Element
 from pymatgen.core import Structure, PeriodicSite, DummySpecie
 from pymatgen.analysis.local_env import MinimumDistanceNN, CrystalNN, VoronoiNN
 
@@ -428,6 +429,63 @@ def get_globals(pristine, defective_structure, defects_structure):
 
     return global_list
 
+# Add ids and ratios in the data
+
+mean_en = []
+idss = []
+
+look_dict = {
+    "GaSe": ["In", "S"],
+    "InSe": ["Ga", "S"],
+    "BN"  : ["C"],
+    "P"   : ["N"],
+    "WSe2": ["Mo", "S"],
+    "MoS2": ["W", "Se"],
+    }
+
+for i in look_dict.keys():
+    pristine_sample = Structure.from_file(f"Final_Dataset/ref_cifs/high_{i}.cif")
+    sample_elements = pristine_sample.composition.elements
+
+    sample_X = [e.X for e in sample_elements]
+
+    sample_en_mean = float(np.round(np.mean(sample_X), 2))
+    mean_en.append(sample_en_mean)
+
+    # Get Ids
+    possible_elements = look_dict.get(i)
+    the_ids = [Element(el).Z for el in possible_elements]
+    idss.append([0] + the_ids)
+
+look_up_dict = dict(zip(mean_en, idss))
+
+def get_ids_ratios(graphs):
+    for data in graphs:
+
+        # Host average electronegativity
+        host_avg_en = np.round(torch.round(data.u[..., 2], decimals=2).item(), 2)
+        # idx+=1
+        # print(idx)
+        # print(host_avg_en)
+
+        ids = look_up_dict.get(host_avg_en)
+        # print(ids)
+
+        # Defect types
+        defects = data.x[:, 6].cpu().numpy()
+
+        # Count occurrences of each id
+        num_defects = [np.sum(defects == item) for item in ids]
+
+        total = sum(num_defects)
+
+        ratios = [count / total for count in num_defects]
+
+        data.ids=torch.tensor(ids, dtype=torch.long)
+        data.ratios=torch.tensor(ratios, dtype=torch.float)
+
+    return graphs
+
 # Create graph representation of the structures
 def graphy(row, reference_structure):
     material = row["dataset_material"]
@@ -468,11 +526,7 @@ def fast_grapy(dataset):
         # Go through every row in the subset
         for index, row in subset.iterrows():
             data = graphy(row, pristine_structure)
-
-            # Track progress
-            if index % 10 == 0:  # Print progress every 10 rows
-                print(f"material {i} ({index+1}/{all_rows}) - {((index+1)/all_rows)*100:.2f}% complete")
-            
+                        
             # Put all graphs together in a list
             graph_list.append(data)
             
